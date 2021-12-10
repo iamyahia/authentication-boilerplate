@@ -1,7 +1,3 @@
-### UPDATED
+## this is complete back end crud application
 
-## this project is this link video: youtube.com/watch?v=YocRq-KesCM&t=6508s
-
-# i stoped this project in this video time: 1:35:00
-
-# i did not complate sendGrid email/ forgot password
+### I am using (express-validator) package just for ( register => password ) just for testing the password that must be more than 6 charechter .
