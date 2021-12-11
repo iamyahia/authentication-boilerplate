@@ -1,23 +1,30 @@
-const sdMail = require("@sendgrid/mail");
+require("dotenv").config();
+const nodemailer = require("nodemailer");
 
-sdMail.setApiKey(
-  "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"
-);
-// sdMail.setApiKey(process.env.EM_API);
+const sendEmail = (options) => {
+  const transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
 
-const msg = {
-  // from: 'hasanalan567@gmail.com',
-  from: {
-    name: "Boilerplate Code",
-    email: "hasanalan567@gmail.com",
-  },
-  to: `allanhasanbaiz@gmail.com`,
-  subject: `title`,
-  text: `this is discription`,
-  html: `<h1>this is html </h1>`,
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+  };
+
+  transporter
+    .sendMail(mailOptions)
+    .then((info) => {
+      console.log(info);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
 
-sdMail
-  .send(msg)
-  .then((res) => console.log("Email send successfully"))
-  .catch((err) => console.log(`Email Not Send. err is:${err}`));
+module.exports = sendEmail;

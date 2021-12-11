@@ -1,15 +1,33 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const ErrorRes = require("../utils/Errors");
+const sendEmail = require("../utils/sendEmail");
+const crypto = require("crypto");
+const { check, validationResult } = require("express-validator");
 
 const register = async (req, res, next) => {
   const { userName, email } = req.body;
   let { password } = req.body;
+  console.log(password.length);
+  const user = await User.findOne({ email });
+
+  if (user) {
+    return next(new ErrorRes("this email is already in use", 404));
+  }
+
+  //  i need ot use package for this thing
+  // if (password.length < 6) {
+  //   return next(new ErrorRes("password must be more than 6"));
+  // }
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).jsonp(errors.array());
+  }
 
   try {
     // hashing password
     const salt = await bcrypt.genSalt(10);
-
     const hashedPassword = await bcrypt.hash(password, salt);
 
     password = hashedPassword;
@@ -61,11 +79,12 @@ const forgotPassword = async (req, res, next) => {
 
   try {
     const user = await User.findOne({ email });
+
     if (!user) {
-      return next(new ErrorRes("Email could not be sent"));
+      return next(new ErrorRes("Email could not be sent !", 404));
     }
 
-    const resetToken = user.resetPasswordToken();
+    const resetToken = user.resetPassToken();
 
     await user.save();
 
@@ -89,14 +108,67 @@ const forgotPassword = async (req, res, next) => {
 
     //  now we send the email, for that we use NodeMailer/sandgrid package .
     try {
-    } catch (err) {}
+      await sendEmail({
+        to: user.email,
+        subject: "Reset Password",
+        html: em_message,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: "Email sent",
+      });
+    } catch (err) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+
+      await user.save();
+      return next(new ErrorRes("Error, the email could not be sent", 500));
+    }
   } catch (err) {
-    console.log(err);
-    next();
+    next(err);
   }
 };
-const resetPassword = (req, res, next) => {
-  res.send("reset password page");
+const resetPassword = async (req, res, next) => {
+  let { password } = req.body;
+  //  we going to reCreate the resetToken
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(req.params.resetToken)
+    .digest("hex");
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return next(new ErrorRes("Invalid reset token", 400));
+    }
+
+    //  i need ot use package for this thing
+    if (password.length < 6) {
+      return next(new ErrorRes("password must be more than 6 charechter"));
+    }
+    // hashing password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    password = hashedPassword;
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      data: "password reset success",
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 const sendToken = (user, statusCode, res) => {
