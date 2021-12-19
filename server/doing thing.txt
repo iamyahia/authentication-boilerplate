@@ -1,4 +1,4 @@
 1- using package for minLength password .
-2-validation ( expretion-validator, mongoose-validator) package 
+2-validation ( express-validator, mongoose-validator) package 
 3-
 4-
