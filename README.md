@@ -1,5 +1,5 @@
 # Authors
-This project has a full authentication back-end using NODEJS, MongoDb, Express .
+This project has a full authentication back-end using NODEJS, MongoDb, Express, with fully custom code .
 
 
 
